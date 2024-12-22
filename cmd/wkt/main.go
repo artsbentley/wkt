@@ -14,7 +14,10 @@ func main() {
 		Name:  "wkt",
 		Usage: "CLI for everything git worktrees",
 		Commands: []*cli.Command{
-			worktree.WorktreeCommand(),
+			worktree.CloneCommand(),
+			worktree.RemoveCommand(),
+			worktree.CreateWorktreeCommand(),
+			worktree.MergeWorktreeCommand(),
 		},
 	}
 
