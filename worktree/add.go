@@ -5,21 +5,21 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/urfave/cli/v3"
 )
 
-// runCommand executes a command and returns its output
-
-func CreateWorktreeCommand() *cli.Command {
+// AddWorktreeCommand returns a CLI command to create a new worktree as a sibling to the current worktree.
+func AddWorktreeCommand() *cli.Command {
 	return &cli.Command{
-		Name:      "create",
-		Usage:     "Create a new git worktree with a specified branch and base",
+		Name:      "add",
+		Usage:     "Add a new git worktree with a specified branch and base",
 		ArgsUsage: "<branch-name>",
 		Flags: []cli.Flag{
 			&cli.StringFlag{
 				Name:    "base",
-				Usage:   "Base branch to use (default: main)",
+				Usage:   "Base branch to use",
 				Aliases: []string{"b"},
 				Value:   "main",
 			},
@@ -31,7 +31,7 @@ func CreateWorktreeCommand() *cli.Command {
 			},
 		},
 		Action: func(ctx context.Context, cmd *cli.Command) error {
-			// Check if branch name was provided
+			// Validate branch name argument.
 			if cmd.Args().Len() == 0 {
 				return fmt.Errorf("branch name is required")
 			}
@@ -40,38 +40,37 @@ func CreateWorktreeCommand() *cli.Command {
 			base := cmd.String("base")
 			upstream := cmd.Bool("upstream")
 
-			// Get the current directory
-			currentDir, err := os.Getwd()
-			if err != nil {
-				return fmt.Errorf("failed to get current working directory: %v", err)
+			// Get the top-level directory of the current worktree.
+			repoRoot := runCommand("git", "rev-parse", "--show-toplevel")
+			if repoRoot == "" {
+				return fmt.Errorf("failed to get repository top-level directory")
 			}
 
-			// Check if the current directory contains a .git file
-			gitFile := filepath.Join(currentDir, ".git")
-			if _, err := os.Stat(gitFile); os.IsNotExist(err) {
-				return fmt.Errorf("no .git file found in the current directory: %v", err)
-			}
+			// Use the parent of the current worktree as the base location.
+			// (e.g. if your current worktree is in "main", the new one will be a sibling directory.)
+			parentDir := filepath.Dir(repoRoot)
 
-			// Create the path for the new worktree
-			worktreePath := filepath.Join(currentDir, branch)
+			// If the branch name contains slashes, sanitize it by replacing them with dashes.
+			// This ensures the worktree is created as a single directory.
+			sanitizedBranch := strings.ReplaceAll(branch, "/", "-")
+			worktreePath := filepath.Join(parentDir, sanitizedBranch)
 
-			// Check if the directory already exists
-			if _, err := os.Stat(worktreePath); !os.IsNotExist(err) {
+			// Check if the target directory already exists.
+			if _, err := os.Stat(worktreePath); err == nil {
 				return fmt.Errorf("directory %s already exists", worktreePath)
 			}
 
 			fmt.Printf("Creating worktree at %s with branch %s based on %s\n", worktreePath, branch, base)
 
-			// Create the worktree
+			// Create the worktree. (The branch name passed to git remains unchanged.)
 			runCommand("git", "worktree", "add", worktreePath, "-b", branch, base)
 
-			// Set upstream if the flag is true
+			// Set upstream if requested.
 			if upstream {
-				// Change to the new worktree directory
+				// Change to the new worktree directory.
 				if err := os.Chdir(worktreePath); err != nil {
 					return fmt.Errorf("failed to change to directory %s: %v", worktreePath, err)
 				}
-
 				fmt.Printf("Setting upstream branch and pushing to origin/%s\n", branch)
 				runCommand("git", "push", "-u", "origin", branch)
 			}
