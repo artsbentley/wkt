@@ -62,6 +62,9 @@ func RemoveCommand() *cli.Command {
 			// Remove local branch if prune didn't work.
 			runCommand("git", "branch", "-d", branchName)
 
+			// sync up with remote
+			runCommand("git", "fetch", "origin", "--prune")
+
 			return nil
 		},
 	}
