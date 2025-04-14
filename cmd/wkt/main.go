@@ -16,6 +16,8 @@ func main() {
 		Commands: []*cli.Command{
 			worktree.CloneCommand(),
 			worktree.RemoveCommand(),
+			worktree.CleanUnusedCommand(),
+			worktree.IssueCommand(),
 			worktree.AddWorktreeCommand(),
 			worktree.MergeWorktreeCommand(),
 			worktree.AddRemoteWorktreeCommand(),
