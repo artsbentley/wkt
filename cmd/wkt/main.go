@@ -18,7 +18,7 @@ func main() {
 			worktree.RemoveCommand(),
 			worktree.IssueCommand(),
 			worktree.AddWorktreeCommand(),
-			worktree.MergeWorktreeCommand(),
+			// worktree.MergeWorktreeCommand(),
 			worktree.AddRemoteWorktreeCommand(),
 		},
 	}
